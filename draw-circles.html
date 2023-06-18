@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <title>Draw Circles</title>
+  </head>
+  <body>
+    <output id="pictures"></output>
+  </body>
+  <script type="text/javascript">
+    const width = 768;
+    const height = 768;
+    const backgroundColor = [0x16, 0x08, 0x56];
+    const backgroundColorHex = rgbToHex(...backgroundColor);
+
+    function createCanvas() {
+      const canvas = document.createElement('canvas');
+      canvas.setAttribute('width', width);
+      canvas.setAttribute('height', height);
+      const ctx = canvas.getContext('2d');
+      // ctx.imageSmoothingEnabled = true;
+      document.getElementById('pictures').appendChild(canvas);
+
+      // define 8 colors: red, orange, yellow, yellowish-green, green, blue, indigo, violet
+      const colors = [
+        [0xE2, 0x3B, 0x2D],
+        [0xE6, 0x97, 0x3D],
+        [0xFE, 0xEA, 0x4F],
+        [0x9B, 0xC5, 0x56],
+        [0x4C, 0x98, 0x46],
+        [0x47, 0x9F, 0xD0],
+        [0x32, 0x74, 0xB8],
+        [0x86, 0x2B, 0x87]
+      ];
+      const numArms = 32;
+      const arc = 2 * Math.PI / numArms;
+      const startRadius = 0.5;
+      const skew = Math.PI / 40;
+
+      let currentArc = 0;
+      let iterRate = 64;
+      //let iterDelta = 0.125;
+
+      function animate() {
+        ctx.fillStyle = backgroundColorHex;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (let i = 0; i < numArms; i++) {
+          const color = colors[i % colors.length];
+          drawArm(ctx, color, currentArc + i * arc, startRadius, skew, iterRate);
+        }
+        currentArc += 0.01;
+        // iterRate = Math.max(16, iterRate - iterDelta);
+        // if (iterRate <= 16 || 64 < iterRate) {
+        //   iterDelta = -iterDelta;
+        // }
+        currentArc %= 2 * Math.PI;
+        requestAnimationFrame(animate);
+      }
+      animate();
+    }
+
+    // Return true if the circle at (x, y) with the given radius is in the canvas
+    function inBound(x, y, radius) {
+      return (-radius <= x && x <= width + radius) && (-radius <= y && y <= height + radius);
+    }
+
+    // Draw a single arm of the spiral
+    function drawArm(ctx, color, startAngle, startRadius, skew, iterRate) {
+      // set x and y to the center
+      let xCenter = width / 2;
+      let yCenter = height / 2;
+      let theta = startAngle;
+      let distance = 2 * startRadius;
+      let radius = startRadius;
+      let iter = 0;
+      for (;;) {
+        // calculate the color based on the current radius
+        const colorPercent = Math.max(0, (radius - 4) / (startRadius - 4.5));
+        const adjustedColor = blendColors(color, backgroundColor, colorPercent*.9);
+        ctx.fillStyle = adjustedColor;
+
+        const x = xCenter + distance * Math.cos(theta);
+        const y = yCenter + distance * Math.sin(theta);
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        radius += iter / iterRate;
+        distance += 1.1 * 2 * radius;
+        theta -= skew;
+        ++iter;
+        if (!inBound(x, y, radius)) break;
+      }
+    }
+
+    // Given the variables r, g, b, return a string of the form "#xxyyzz"
+    function rgbToHex(r, g, b) {
+      const hex = (r << 16) | (g << 8) | b;
+      return '#' + (0x1000000 + hex).toString(16).slice(1);
+    }
+
+    // Given two colors, return a color that is a weighted average of the two
+    function blendColors([r1, g1, b1], [r2, g2, b2], percent) {
+      const r = Math.round(r1 + percent * (r2 - r1));
+      const g = Math.round(g1 + percent * (g2 - g1));
+      const b = Math.round(b1 + percent * (b2 - b1));
+      return rgbToHex(r, g, b);
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      createCanvas();
+    });
+  </script>
+</html>
